@@ -1,27 +1,66 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-function getApiresponse() {
-  fetch('http://citymultibot.kbncran.ru')
-  .then(
-    response => response.json()
-  )
-  .then(
-    response => {
-      Alert.alert(JSON.stringify(response));
-    }
-  );
-}
-
 export default function HomeScreen() {
+  useEffect(() => {
+    const checkSession = async () => {
+      if (await AsyncStorage.getItem('access_token') !== null) {
+        router.replace('/home');
+      }
+    }
+    checkSession();
+  })
+
+  function getApiresponse() {
+    fetch('http://citymultibot.kbncran.ru/api/v1/users/auth', 
+      {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(loginForm)
+      },
+    )
+    .then(
+      response => response.json()
+    )
+    .then(response => {
+        if (response.msg !== "OK") {
+          Alert.alert("Invalid email/password")
+          return
+        } else {
+          AsyncStorage.setItem("access_token", response.access_token);
+          AsyncStorage.setItem("user_id", response.access_token);
+          AsyncStorage.setItem("first_name", response.first_name);
+          router.replace('/home');
+        }
+      })
+  }
+
+  const [loginForm, setLoginForm] = useState({
+    email: '',
+    password: ''
+  });
+
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.text}>Sign in</Text>
+      <Text style={styles.text}>Добро пожаловать!</Text>
       <View style={styles.centerContent}>
-        <TextInput style={styles.input}/>
-        <TextInput style={styles.input}/>
+        <TextInput 
+          style={styles.input} 
+          keyboardType='email-address' 
+          value={loginForm.email}
+          onChangeText={(text) => setLoginForm({...loginForm, email: text})}
+        />
+        <TextInput 
+          style={styles.input} 
+          secureTextEntry={true}
+          value={loginForm.password}
+          onChangeText={(text) => setLoginForm({...loginForm, password: text})}
+        />
         <TouchableOpacity style={styles.button} onPress={getApiresponse}>
-          <Text style={styles.buttonText}>Sign in</Text>
+          <Text style={styles.buttonText}>Войти</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -35,32 +74,35 @@ const styles = StyleSheet.create({
   },
   text: {
     color: 'white',
-    fontSize: 48,
-    fontFamily: 'Arial',
-    marginTop: 20,  // Add some spacing from top
+    fontSize: 32,
+    fontFamily: 'Helvetica',
+    marginTop: '15%',
+    /* marginLeft: '8%' */
   },
   centerContent: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     width: '100%',
+    marginTop: '30%'
   },
   input: {
     margin: '2%',
-    width: '80%',
-    height: '8%',
-    borderWidth: 1,
+    width: '85%',
+    height: '10%',
+    borderWidth: 0.5,
     borderColor: '#fff',
+    color: 'white',
     borderRadius: 20,
     fontSize: 20,
     textAlign: 'center',
   },
   button: {
     backgroundColor: '#09bcf3',
-    margin: '5%',
-    width: '30%',
-    height: '8%',
-    borderRadius: 25,
+    margin: '2%',
+    width: '85%',
+    height: '10%',
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
