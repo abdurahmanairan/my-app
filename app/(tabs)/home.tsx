@@ -1,39 +1,50 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function MainScreen(){
     const [parkData, setData] = useState([]);
-    const [loaded, dataloaded] = useState(false);
 
     async function getParkList() {
         let user_id = await AsyncStorage.getItem("user_id");
         let access_token = await AsyncStorage.getItem("access_token");
-        fetch('http://citymultibot.kbncran.ru/api/v1/parkings?id=' + user_id + '&app=user',
+        let res = await fetch('http://citymultibot.kbncran.ru/api/parkings?id=' + user_id + '&app=user',
             {
                 headers: {
                     'Authorization': 'Bearer ' + access_token
                 }
             }
         )
-        .then(response => response.json())
-        .then(response => {
-            setData(response);
-            dataloaded(true);
-        })
+        if (res.status === 200) {
+          await res.json()
+          .then(response => {
+              setData(response.parkings);
+            }
+          )
+        } else {
+          await AsyncStorage.removeItem('access_token');
+          await router.replace('/');
+        }
     }
 
     useEffect(() => {
-        if (!loaded) {
-            getParkList();
-        }
-    })
+      getParkList();
+    }, [])
+
+    function getRobotData(parking) {
+      router.push({
+        pathname: '/robots',
+        params: {id: parking.id}
+      })
+    }
 
     return (
         <SafeAreaView style={styles.container}>
+          <ScrollView showsVerticalScrollIndicator={false}>
             {parkData.map((item, index) => (
-                <TouchableOpacity key={index} style={styles.parkcontainer}>
+                <TouchableOpacity key={index} style={styles.parkcontainer} onPress={() => getRobotData(item)}>
                     <Text style={styles.text}>
                         {item.name}
                     </Text>
@@ -50,24 +61,28 @@ export default function MainScreen(){
                     </View>
                 </TouchableOpacity>
             ))}
+          </ScrollView>
         </SafeAreaView>
     )
 }
 
+const { width } = Dimensions.get('window');
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center'
+    alignItems: 'center',
+    marginTop: '5%'
   },
   parkcontainer: {
     /* alignItems: 'center', */
     borderRadius: 10,
-    height: '15%',
-    width: '80%',
+    height: 100,
+    width: width * 0.95,
     margin: 4,
     justifyContent: 'center',
     backgroundColor: 'rgba(48, 177, 166, 0.53)',
-    padding: '5%'
+    padding: '3%'
   },
   text: {
     color: 'white',

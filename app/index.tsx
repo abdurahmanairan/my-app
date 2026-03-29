@@ -14,8 +14,8 @@ export default function HomeScreen() {
     checkSession();
   })
 
-  function getApiresponse() {
-    fetch('http://citymultibot.kbncran.ru/api/v1/users/auth', 
+  async function getApiresponse() {
+    await fetch('http://citymultibot.kbncran.ru/api/users/auth', 
       {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
